@@ -1,14 +1,15 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useReducer, useState } from 'react';
 import Header from '../Header/Header';
 import TaskList from './TaskList';
 import { taskData } from '@/app/data/tasks';
 import TaskModal from './TaskModal';
 import TaskActions from './TaskActions';
 import { nextId } from '@/app/utils/nextId';
+import { taskReducer } from '@/app/reducer/taskReducer';
 
 const TaskBoard = () => {
-  const [tasks, setTasks] = useState(taskData);
+  const [tasks, dispatch] = useReducer(taskReducer, taskData);
   const [taskToUpdate, setTaskToUpdate] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -26,29 +27,44 @@ const TaskBoard = () => {
     completed: tasks.filter((t) => t.status === 'completed').length,
   };
 
-  const handleAddEditTask = (data, isAdded) => {
+  const handleAddEditTask = (taskData, isAdded) => {
     if (isAdded) {
-      setTaskToUpdate(null);
-      setTasks([
-        ...tasks,
-        {
+      dispatch({
+        type: 'add_task',
+        payload: {
           id: nextId(tasks),
-          ...data,
+          task: taskData,
         },
-      ]);
+      });
+      setTaskToUpdate(null);
     } else {
-      setTasks(
-        tasks.map((task) => {
-          if (task.id === data.id) {
-            return data;
-          } else {
-            return task;
-          }
-        })
-      );
+      dispatch({
+        type: 'update_task',
+        payload: {
+          id: taskData.id,
+          task: taskData,
+        },
+      });
     }
   };
 
+  const handleToggleStatus = (taskId) => {
+    dispatch({
+      type: 'toggle_status',
+      payload: {
+        id: taskId,
+      },
+    });
+  };
+
+  const handleDeleteTask = (taskId) => {
+    dispatch({
+      type: 'delete_task',
+      payload: {
+        id: taskId,
+      },
+    });
+  };
   const handleCloseModalTask = () => {
     setTaskToUpdate(null);
     setShowModal(false);
@@ -57,23 +73,6 @@ const TaskBoard = () => {
   const handleUpdateTask = (task) => {
     setTaskToUpdate(task);
     setShowModal(true);
-  };
-
-  const handleToggleStatus = (taskId) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              status: task.status === 'completed' ? 'pending' : 'completed',
-            }
-          : task
-      )
-    );
-  };
-
-  const handleDeleteTask = (taskId) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
   };
 
   return (
